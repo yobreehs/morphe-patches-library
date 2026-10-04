@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Deque;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,8 +53,9 @@ public class Logger {
         // It's very important that no Settings are used in this method,
         // as this code is used when a context is not set and thus referencing
         // a setting will crash the app.
-        logBuffer.addLast(message);
-        int newSize = logBufferByteSize.addAndGet(message.length());
+        String timestamped = logTimestamp() + message;
+        logBuffer.addLast(timestamped);
+        int newSize = logBufferByteSize.addAndGet(timestamped.length());
 
         // Remove the oldest entries if over the log size limits.
         while (newSize > BUFFER_MAX_BYTES || logBuffer.size() > BUFFER_MAX_SIZE) {
@@ -65,6 +67,14 @@ public class Logger {
 
             newSize = logBufferByteSize.addAndGet(-removed.length());
         }
+    }
+
+    /**
+     * @return A timestamp prefix (HH:mm:ss.SSS) for a log line, used to locate delays
+     * such as the home feed taking tens of seconds to load.
+     */
+    private static String logTimestamp() {
+        return String.format(Locale.US, "[%1$tT.%1$tL] ", System.currentTimeMillis());
     }
 
     public static Deque<String> getLogBuffer() {
